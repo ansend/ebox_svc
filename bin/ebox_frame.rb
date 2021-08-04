@@ -26,6 +26,11 @@ class EboxFrameE1 < Frame
     @fields.cmd        = NumField.new(1, "Command Type",   0xE1)
     @fields.obuid      = NumField.new(4, "Obu ID",         obuid)
     @fields.iccsn      = DatField.new(10, "OBU ICC SN"         )
+    @fields.sys_file   = DatField.new(26, "System File"         )
+    @fields.veh_file   = DatField.new(79, "Veh  File"         )
+    @fields.card_file  = DatField.new(50, "0015  File"         )
+    @fields.obu_status = DatField.new(2, "OBU status"         )
+    @fields.money      = DatField.new(4, "Cost Moeny"         )
   end
 end
 

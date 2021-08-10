@@ -7,6 +7,7 @@ require_relative 'trans_protocol'
 require_relative 'ebox_frame'
 require_relative 'trans_protocol'
 require_relative "../lib/utest"
+require_relative 'sw_psam'
 
 $g_client = nil
 
@@ -112,8 +113,17 @@ def handle_data(hex_str)
         send_frame(frmf2)
     end 
     
+    if(cmd_type == "E6")
+        frme6 = EboxFrameE6.new
+        frme6 <= hex_str
+        puts frme6.to_ps
+        
+        frmf6 =EboxFrameF6.new
+        puts frmf6.to_hs
+        send_frame(frmf6)
+    end 
     
-    
+
     
     cmd_type = cmd_type.downcase
     
@@ -123,15 +133,8 @@ def handle_data(hex_str)
         #send(func_name)
         #调用完了看有没有要发的数据，如果有就发出去
     end 
-    
- 
 
 end 
-
-
-
-
-
 
 
 
@@ -272,12 +275,13 @@ class AbcServer
                      #line = client.gets    # here simulate read the client request.
                      begin 
                          recv_dat = client.recv(1024) # here simulate read the client request.
+                         puts "recv data is #{recv_dat}"
                      rescue Exception => e
      
                          puts "ERROR: connection to server failed"
                          puts e.message
                          puts e.backtrace.inspect
-                         @client.close 
+                         client.close 
                          break
                      end
                        
@@ -305,17 +309,29 @@ class AbcServer
                          # puts "#{i}" + "times"
                          STDOUT.flush
                      else
-                         puts "recv empty string since remote close the socket"
-                         puts line.class
-                         p line
-                         client.close  # close it 
+                         puts "recv empty string since remote close the socket ansen ansen "
+                         puts "close the socket"
+                         #puts line.class
+                         #p line
+                         begin 
+                            client.close  # close it 
+                            #client.shutdown(:RDWR) # close it 
+                         rescue Exception => e
+                            puts "exception found"
+                            puts e.message
+                            puts e.backtrace.inspect
+                            puts "exception end"
+                         ensure
+                            puts "do some clean work here."
+                         end
+                         puts "close the socket after close and shutdown"
                          break         # wait another socket
-     
                      end       
                      i = i + 1
                  }  #end of loop client recv.
 
-                 client.puts "Closing the connection. Bye!"
+                 #client.puts "Closing the connection. Bye!"
+                 puts "close the socket again final"
                  client.close                # 关闭客户端连接
             end  #end of thread.
         }#end of loop server accept.
@@ -449,19 +465,85 @@ class EboxFrameHandler
         puts frmf2.to_hs
         send_frame(frmf2)
     end 
-    
+
+    def on_msg_e6(hex_str)
+        puts "called on_msg_e6"
+        frme6 = EboxFrameE6.new
+        frme6 <= hex_str
+        puts frme6.to_ps
+        
+        frm_esam_sys = Frame_ESAM_SysInfo.new
+        frm_esam_sys <= frme6.sysinfo.to_hs
+        puts frm_esam_sys.to_ps
+
+        con_provider = frm_esam_sys.vendor_id.to_hs[0..7] * 2
+        contract_sn  = frm_esam_sys.contractsn.to_hs
+
+        @sw_psam = SwPsam.new(con_provider, contract_sn)
+        
+        veh_plaint =  @sw_psam.decrypt_veh_info(frme6.veh_info.to_hs)
+        veh_len = veh_plaint[0..1].to_i(16) - 8
+        veh_info = veh_plaint[18..(18 + veh_len*2 - 1)]
+        
+        frmf6 = EboxFrameF6.new
+        frmf6.set_field_values(:serial => "FF" * 32)
+        frmf6.set_field_values(:psam_id => @sw_psam.get_term_id)
+        frmf6.set_field_values(:veh_info => veh_info)
+        puts frmf6.to_ps
+        puts frmf6.to_hs
+        send_frame(frmf6)
+    end 
+
+    def on_msg_e7(hex_str)
+        puts "called on_msg_e7"
+        frme7 = EboxFrameE7.new
+        frme7 <= hex_str
+        puts frme7.to_ps
+        
+        puts frme7.to_hs
+        puts frme7.cmd.to_hs
+        #hexmoney = sprintf("%.08X", @conf.consume_money)
+        
+        #rand_num       = frme7.randnum.to_hs
+        icc_serial     = frme7.icc_serial.to_hs
+        money          = frme7.money.to_hs
+        tran_time      = frme7.tran_time.to_hs
+        icc_sn         = frme7.icc_info.to_hs[16..31]
+        issue_id       = frme7.icc_info.to_hs[0..15]
+
+        mac1 = @sw_psam.mix_purchase_mac1(frme7.randnum.to_hs, "09", frme7.icc_serial.to_hs, frme7.money.to_hs, 
+                                          frme7.tran_time.to_hs, "01", "00",  frme7.icc_info.to_hs[16..31], 
+                                          frme7.icc_info.to_hs[0..15])
+        frmf7 = EboxFrameF7.new
+        frmf7.set_field_values(:mac1 => mac1)
+        frmf7.set_field_values(:psam_serial => @sw_psam.get_trade_sn)
+        puts frmf7.to_ps
+        puts frmf7.to_hs
+        send_frame(frmf7)
+    end 
+
+
+   
     def handle_frame_list(frame_list)
+
+      begin
         frame_list.each{|frame|
-        if frame.size > 5
-           
-            frm = @frame_type.new
-            #puts "origin data: #{bin2hex(res)}"
-            if frm.resolve(frame)
-                handle_frame(frm.data.to_hs)
+            if frame.size > 5
+               
+                frm = @frame_type.new
+                #puts "origin data: #{bin2hex(res)}"
+                if frm.resolve(frame)
+                    handle_frame(frm.data.to_hs)
+                end
             end
-        end
-    }
-    
+        }
+      rescue
+         expmsg = $!.to_s
+         str = '<ept>' + $!.to_s + "\n"
+         $@.each{ |line| str = str + 'from ' + line.encode("gb2312") + "\n" }
+         str = str + '</ept>'
+         puts str
+      end
     
     end 
     

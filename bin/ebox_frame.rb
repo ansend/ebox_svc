@@ -67,6 +67,78 @@ class EboxFrameE2 < Frame
 
 end 
 
+class EboxFrameE3 < Frame
+  def initialize()
+    super()
+    @fields.cmd          = NumField.new(1, "Command Type",     0xE3)
+    @fields.status       = NumField.new(1, "Status",           0x00)
+    @fields.psam_cnt     = NumField.new(1, "Need Psam Auth count" ,       0x00)
+    @fields.psamid       = NumField.new(6, "Psam Terminal ID", 0x00)
+    @fields.psamsn       = DatField.new(10, "Psam Sn")
+    @fields.keytype      = NumField.new(1, "Key Type",         0x00)
+    @fields.psam_ver     = NumField.new(1, "Psam Version",     0x00)
+    @fields.area_code    = NumField.new(8, "Area Code",        0x00)
+    @fields.random       = NumField.new(8, "Rand Number",      0x00)
+    
+  end
+
+end 
+
+class EboxFrameE4 < Frame
+  def initialize()
+    super()
+    @fields.cmd          = NumField.new(1, "Command Type",     0xE4)
+    @fields.status       = NumField.new(1, "Status",           0x00)
+    @fields.psam_cnt     = NumField.new(1, "Need Psam Auth count" ,       0x00)
+    @fields.auth_status  = NumField.new(2, "Auth Status",      0x00)
+  end
+end 
+
+class EboxFrameE5 < Frame
+  def initialize()
+    super()
+    @fields.cmd          = NumField.new(1, "Command Type",     0xE4)
+    @fields.status       = NumField.new(1, "Status",           0x00)
+  end
+
+end 
+
+class EboxFrameE6 < Frame
+  def initialize(obuid =0)
+    super()
+    @fields.cmd          = NumField.new(1, "Command Type",    0xE2)
+    @fields.obuid        = NumField.new(4, "Obu ID",         obuid)
+    @fields.sysinfo      = DatField.new(26, "System Info")
+    @fields.icc0015      = DatField.new(28, "ICC 0015")
+    @fields.keytype      = NumField.new(1, "Key Type",        0x00)
+    @fields.veh_length   = NumField.new(1, "Veh Info Length", 0x00)
+    @fields.veh_info     = DatField.new(88, "Veh Info")
+    #@fields.rand         = NumField.new(4,  "Rand Number",    0x00)
+  end
+end 
+
+
+class EboxFrameE7 < Frame
+  def initialize
+    super()
+    @fields.cmd          = NumField.new(1, "Command Type",        0xE7)
+    @fields.icc_info     = DatField.new(16, "vendor and number")
+    @fields.randnum      = NumField.new(4, "Icc Rand",            0x00)
+    @fields.icc_serial   = NumField.new(2, "consume serial",      0x00)
+    @fields.money        = NumField.new(4, "Consume Money",       0x00)
+    @fields.tran_time    = NumField.new(7, "transfer date and time",    0x00)
+    @fields.tran_mode    = NumField.new(1, "trade mode 09",       0x09)
+    @fields.key_type     = NumField.new(1, "key type ",        0x00)
+    @fields.pyh_id       = NumField.new(2, "Consume Slot ",    0x00)
+    @fields.psam_id      = NumField.new(6, "Psam terminal Number ",    0x00)
+    @fields.check_mac2   = NumField.new(1, "Check Mac2 or Not ",    0x00)
+    @fields.serial       = DatField.new(32, "Serial Num ")
+    #@fields.balance      = NumField.new(4, "Balance",              0x00)
+    #@fields.version      = NumField.new(1, "Version",              0x00)
+    #@fields.alg          = NumField.new(1, "Algorithm",            0x00)
+  end
+end
+
 
 class EboxFrameF0 < Frame
   def initialize(obuid =0 )
@@ -91,6 +163,53 @@ class EboxFrameF2 < Frame
   end
 end
 
+class EboxFrameF3 < Frame
+  def initialize()
+    super()
+    @fields.cmd        = NumField.new(1, "Command Type",   0xF3)
+  end
+end
+
+class EboxFrameF4 < Frame
+  def initialize()
+    super()
+    @fields.cmd          = NumField.new(1, "Command Type",   0xF4)
+    @fields.psam_cnt     = NumField.new(1, "Status",         0x00)
+    @fields.random       = NumField.new(8, "Rand Number",    0x00)
+    @fields.mac          = NumField.new(8, "Mac",            0x00)
+  end
+end
+
+class EboxFrameF5 < Frame
+  def initialize()
+    super()
+    @fields.cmd          = NumField.new(1, "Command Type",   0xF5)
+  end
+end
+
+class EboxFrameF6 < Frame
+  def initialize()
+    super()
+    @fields.cmd          = NumField.new(1, "Command Type",            0xF6)
+    @fields.status       = NumField.new(1, "Status",                  0x00)
+    @fields.is_black     = NumField.new(1, "In Black List",           0x00)
+    @fields.pyh_id       = NumField.new(2, "Consume Slot ",           0x00)
+    @fields.psam_id      = NumField.new(6, "Psam terminal Number",    0x00)
+    @fields.serial       = DatField.new(32, "Consume Sequence Number")
+    @fields.veh_length   = NumField.new(1, "Veh Info Length", 0x4F)
+    @fields.veh_info     = DatField.new(79, "Veh Info")
+  end
+end 
+
+class EboxFrameF7 < Frame
+  def initialize()
+    super()
+    @fields.cmd          = NumField.new(1, "Command Type",       0xF7)
+    @fields.status       = NumField.new(1, "Status",             0x00)
+    @fields.mac1         = NumField.new(4, "Mac1",               0x00)
+    @fields.psam_serial  = NumField.new(4, "Psam trade serial",  0x00)
+  end
+end 
 
 class EboxFrameC2 < Frame
   def initialize(obuid =0, stoptype=1)
@@ -218,7 +337,7 @@ class EboxFrameB5 < Frame
 end
 
 
-
+=begin
 class EboxFrameF6 < Frame
   def initialize
     super()
@@ -237,25 +356,7 @@ class EboxFrameF6 < Frame
   end
   
 end
-
-
-
-class EboxFrameE7 < Frame
-  def initialize
-    super()
-    @fields.cmd          = NumField.new(1, "Command Type",        0xE7)
-
-    @fields.obuid        = NumField.new(4, "OBU ID",              0x00)
-    @fields.psam_id      = NumField.new(6, "PSAM terminal id",    0x00)
-    @fields.psam_tran_sn = NumField.new(4, "PSAM trans sn",       0x00)
-
-    @fields.tran_time    = NumField.new(7, "transfer date and time",    0x00)
-    @fields.mac1         = NumField.new(4, "psam caculate mac1",  0x00)
-    @fields.tran_type    = NumField.new(1, "trans_type",          0x00)
-   
-  end
-  
-end
+=end
 
 
 class EboxFrameC8 < Frame
@@ -289,7 +390,19 @@ class Frame_Cpucard_0015 < Frame
 end
 
 
+class Frame_ESAM_SysInfo < Frame
+    def initialize
+        super()
+        @fields.vendor_id              = NumField.new(8, "发行方标识",           0x00)
+        @fields.card_type              = NumField.new(1, "协约类型",             0x00)
+        @fields.card_ver               = NumField.new(1, "合同版本,1xH:旧国标,4xH:新国标,5xH:国密卡  ",  0x00)
+        @fields.contractsn             = NumField.new(8, "合同序列号",           0x00)
+        @fields.signdate               = NumField.new(4, "签署日期",             0x00)
+        @fields.expiredate             = NumField.new(4, "到期日期",             0x00)
+		
 
+    end
+end
 
 
 

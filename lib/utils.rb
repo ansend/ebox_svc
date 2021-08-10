@@ -46,7 +46,8 @@ class SM4
         # extern void __stdcall sm4_init_by_card_id(unsigned char card_id[8],unsigned char output[16]);
         # extern void __stdcall encrypt_data_sm4(unsigned char *out_key_dat, unsigned char *rand_dat, unsigned char *out_dat);
         def initialize
-            libutils = Fiddle.dlopen('utest.dll')
+            #libutils = Fiddle.dlopen('utest.dll')
+            libutils = Fiddle.dlopen('./libutest.so')
             @sm4_init_by_card_id = Fiddle::Function.new(libutils['sm4_init_by_card_id'],[Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT, Fiddle::TYPE_VOIDP],                     Fiddle::TYPE_VOID)
             @encrypt_data_sm4    = Fiddle::Function.new(libutils['encrypt_data_sm4'],   [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOID)
             @sm4_init_by_card_id_with_rootkey = Fiddle::Function.new(libutils['sm4_init_by_card_id_with_rootkey'],[Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT, Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOID)
@@ -106,20 +107,23 @@ end
 
 class Utils
     def initialize
-        libutils       = Fiddle.dlopen('utest.dll')
-        @get_utick     = Fiddle::Function.new(libutils['get_utick'],     [], Fiddle::TYPE_LONG_LONG)
+        #libutils       = Fiddle.dlopen('utest.dll')
+        libutils       = Fiddle.dlopen('./libutest.so')
+        #@get_utick     = Fiddle::Function.new(libutils['get_utick'],     [], Fiddle::TYPE_LONG_LONG)
         @des_encrypt   = Fiddle::Function.new(libutils['des_encrypt'],   [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOID)
         @des_decrypt   = Fiddle::Function.new(libutils['des_decrypt'],   [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOID)
         @mac_calculate = Fiddle::Function.new(libutils['mac_calculate'], [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOID)
         @des_diversify = Fiddle::Function.new(libutils['des_diversify'], [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOID)
-        @messagebox    = Fiddle::Function.new(libutils['messagebox'],    [Fiddle::TYPE_INT,   Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT], Fiddle::TYPE_INT)
-        @question      = Fiddle::Function.new(libutils['question'],      [Fiddle::TYPE_INT,   Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
-        @information   = Fiddle::Function.new(libutils['information'],   [Fiddle::TYPE_INT,   Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOID)
-        @inputbox      = Fiddle::Function.new(libutils['inputbox'],      [Fiddle::TYPE_INT,   Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOIDP)
-        @gettimestr    = Fiddle::Function.new(libutils['gettimestr'],    [Fiddle::TYPE_INT],  Fiddle::TYPE_VOIDP)
-        @formattimestr = Fiddle::Function.new(libutils['formattimestr'], [Fiddle::TYPE_DOUBLE,Fiddle::TYPE_INT], Fiddle::TYPE_VOIDP)
-        @datetime_now  = Fiddle::Function.new(libutils['datetime_now'],  [], Fiddle::TYPE_DOUBLE)
-        @formatdatetime = Fiddle::Function.new(libutils['formatdatetime'],[Fiddle::TYPE_DOUBLE,Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOIDP)
+
+        @single_des_diversify = Fiddle::Function.new(libutils['single_des_diversify'], [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOID)
+ #@messagebox    = Fiddle::Function.new(libutils['messagebox'],    [Fiddle::TYPE_INT,   Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT], Fiddle::TYPE_INT)
+        #@question      = Fiddle::Function.new(libutils['question'],      [Fiddle::TYPE_INT,   Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
+        #@information   = Fiddle::Function.new(libutils['information'],   [Fiddle::TYPE_INT,   Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOID)
+        #@inputbox      = Fiddle::Function.new(libutils['inputbox'],      [Fiddle::TYPE_INT,   Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOIDP)
+        #@gettimestr    = Fiddle::Function.new(libutils['gettimestr'],    [Fiddle::TYPE_INT],  Fiddle::TYPE_VOIDP)
+        #@formattimestr = Fiddle::Function.new(libutils['formattimestr'], [Fiddle::TYPE_DOUBLE,Fiddle::TYPE_INT], Fiddle::TYPE_VOIDP)
+        #@datetime_now  = Fiddle::Function.new(libutils['datetime_now'],  [], Fiddle::TYPE_DOUBLE)
+        #@formatdatetime = Fiddle::Function.new(libutils['formatdatetime'],[Fiddle::TYPE_DOUBLE,Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOIDP)
     end
 
     def apphandle
@@ -176,6 +180,15 @@ class Utils
         hexout =' '* hexkey.length #避免缓冲不够长
         while hexout.length % 16 > 0 do hexout = hexout + "0" end
         @des_diversify.call(hexdid, hexkey, hexout)
+        return hexout
+    end
+
+    #单次密钥分散,用于交易的会话密钥计算， 会话密钥是单密钥长度8字节.
+    #用分散因子did对key进行分散, 参数都是16进制字符串，参数名已经给出意义，这里不解释了。
+    def single_des_diversify(hexdid, hexkey)
+        hexout =' '* hexkey.length #避免缓冲不够长
+        while hexout.length % 16 > 0 do hexout = hexout + "0" end
+        @single_des_diversify.call(hexdid, hexkey, hexout)
         return hexout
     end
 
